@@ -18,6 +18,8 @@
 │   ├── test_config.py
 │   ├── test_fetcher.py
 │   └── test_saver.py
+├── Dockerfile
+├── .dockerignore
 ├── pyproject.toml
 └── README.md
 ```
@@ -48,6 +50,105 @@ uv run python src/main.py
 | --- | --- |
 | `data/all_forecasts.json` | 全レコードの JSON |
 | `data/all_forecasts.csv` | 全レコードの CSV（BOM 付き UTF-8） |
+
+## Cloud Run デプロイ
+
+### 前提条件
+
+- Google Cloud プロジェクトが作成済みであること
+- `gcloud` CLI がインストール済みで、対象プロジェクトに認証済みであること
+- 以下の API が有効化されていること
+  - Artifact Registry API
+  - Cloud Run API
+  - Cloud Scheduler API
+  - IAM API
+
+### 1. 環境変数の設定
+
+```bash
+export PROJECT_ID=your-project-id
+export REGION=asia-northeast1
+export REPO=jma-api-forecast
+export JOB_NAME=jma-api-forecast
+export SA_NAME=jma-api-forecast-sa
+```
+
+### 2. サービスアカウントの作成と権限付与
+
+```bash
+# サービスアカウントの作成
+gcloud iam service-accounts create $SA_NAME \
+  --display-name "jma-api-forecast runner"
+
+# Cloud Run ジョブ実行権限（Cloud Scheduler が Job を起動するために必要）
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member "serviceAccount:${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role "roles/run.invoker"
+```
+
+### 3. Artifact Registry リポジトリの作成（初回のみ）
+
+```bash
+gcloud artifacts repositories create $REPO \
+  --repository-format=docker \
+  --location=$REGION \
+  --description "jma-api-forecast Docker images"
+```
+
+### 4. Docker イメージのビルドと push
+
+```bash
+gcloud builds submit \
+  --tag ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${JOB_NAME}:latest
+```
+
+### 5. Cloud Run ジョブのデプロイ
+
+```bash
+gcloud run jobs create $JOB_NAME \
+  --image ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${JOB_NAME}:latest \
+  --region $REGION \
+  --service-account ${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
+  --max-retries 1 \
+  --task-timeout 300
+```
+
+更新時は `create` を `update` に変更して同じコマンドを実行します。
+
+手動実行で動作確認する場合:
+
+```bash
+gcloud run jobs execute $JOB_NAME --region $REGION
+```
+
+### 6. Cloud Scheduler でのスケジュール実行設定
+
+毎日 06:00 JST に実行する例（スケジュールは用途に応じて変更してください）:
+
+```bash
+gcloud scheduler jobs create http ${JOB_NAME}-daily \
+  --location $REGION \
+  --schedule "0 6 * * *" \
+  --time-zone "Asia/Tokyo" \
+  --uri "https://${REGION}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${PROJECT_ID}/jobs/${JOB_NAME}:run" \
+  --http-method POST \
+  --oauth-service-account-email ${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
+```
+
+### 7. 実行失敗の監視
+
+Cloud Run ジョブは全エリアの取得が失敗した場合に exit code 1 で終了します。Cloud Monitoring でアラートを設定することで失敗を検知できます。
+
+```bash
+# ジョブ実行履歴の確認
+gcloud run jobs executions list --job $JOB_NAME --region $REGION
+
+# 直近の実行ログの確認
+gcloud logging read \
+  "resource.type=cloud_run_job AND resource.labels.job_name=${JOB_NAME}" \
+  --limit 50 \
+  --format "value(timestamp, severity, textPayload)"
+```
 
 ## 取得地点の変更
 
