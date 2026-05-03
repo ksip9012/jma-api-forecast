@@ -1,11 +1,20 @@
+import logging
+import sys
+
 from config import setup_logging
 from fetcher import process_all_areas
 from saver import save_data
 
+logger = logging.getLogger(__name__)
+
 
 def main() -> None:
     setup_logging()
-    forecasts = process_all_areas()
+    try:
+        forecasts = process_all_areas()
+    except RuntimeError as e:
+        logger.error("%s", e)
+        sys.exit(1)
     save_data(forecasts)
 
 
