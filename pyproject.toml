@@ -1,10 +1,9 @@
 [project]
-name = "life-weather-forecast"
+name = "jma-api-forecast"
 version = "0.1.0"
-description = "Add your description here"
+description = "気象庁の JSON API から週間予報データを取得して CSV/JSON に保存するツール"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "beautifulsoup4>=4.14.3",
     "requests>=2.32.5",
 ]
