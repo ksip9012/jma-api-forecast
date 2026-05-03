@@ -2,6 +2,7 @@
 
 import logging
 import time
+from itertools import zip_longest
 from typing import Any
 
 import requests
@@ -79,17 +80,19 @@ def process_all_areas(locations: list[AreaSetting]) -> list[Forecast]:
             temps_min: list[str] = area_temp.get("tempsMin", [])
             temps_max: list[str] = area_temp.get("tempsMax", [])
 
-            for i in range(len(dates)):
+            for date, weather_code, pop, reliability, temp_min, temp_max in zip_longest(
+                dates, weather_codes, pops, reliabilities, temps_min, temps_max, fillvalue=""
+            ):
                 all_forecasts.append(Forecast(
-                    date=dates[i].split("T")[0],
+                    date=date.split("T")[0],
                     area_group=setting.area_name,
                     prefecture=setting.prefecture,
                     location=setting.location,
-                    weather_code=weather_codes[i] if i < len(weather_codes) else "",
-                    pop=pops[i] if i < len(pops) else "",
-                    temp_min=temps_min[i] if i < len(temps_min) else "",
-                    temp_max=temps_max[i] if i < len(temps_max) else "",
-                    reliability=reliabilities[i] if i < len(reliabilities) else "",
+                    weather_code=weather_code,
+                    pop=pop,
+                    temp_min=temp_min,
+                    temp_max=temp_max,
+                    reliability=reliability,
                 ))
 
             time.sleep(_REQUEST_INTERVAL_SEC)
