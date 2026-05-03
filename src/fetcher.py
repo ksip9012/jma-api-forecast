@@ -1,3 +1,5 @@
+"""気象庁 JSON API から週間予報データを取得・パースするモジュール。"""
+
 import logging
 import time
 from typing import Any
@@ -22,6 +24,17 @@ _AREA_CODE_PREFIX_LEN = 5
 
 
 def _get_weekly_forecast_json(office_code: str) -> dict[str, Any]:
+    """気象庁 API から指定オフィスの週間予報 JSON を取得する。
+
+    Args:
+        office_code: 気象庁の府県予報区コード。
+
+    Returns:
+        週間予報データの辞書（API レスポンスの index 1 に相当）。
+
+    Raises:
+        requests.exceptions.RequestException: ネットワークエラーまたは HTTP エラーが発生した場合。
+    """
     url = _JMA_FORECAST_URL.format(office_code=office_code)
     headers = {"User-Agent": _USER_AGENT}
     res = requests.get(url, headers=headers, timeout=_REQUEST_TIMEOUT)
@@ -30,6 +43,20 @@ def _get_weekly_forecast_json(office_code: str) -> dict[str, Any]:
 
 
 def process_all_areas(locations: list[AreaSetting]) -> list[Forecast]:
+    """指定された全エリアの週間予報を取得してフラットなレコードリストを返す。
+
+    各エリアで API 取得またはパースに失敗した場合はスキップしてログに記録する。
+    全エリアが失敗した場合は RuntimeError を送出する。
+
+    Args:
+        locations: 取得対象の予報エリアリスト。
+
+    Returns:
+        list[Forecast]: 全エリア・全日付のフラットな予報レコードリスト。
+
+    Raises:
+        RuntimeError: 全エリアで取得・パースに失敗し、データが1件も得られなかった場合。
+    """
     all_forecasts: list[Forecast] = []
     skipped: list[str] = []
 
