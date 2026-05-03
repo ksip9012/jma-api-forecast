@@ -1,21 +1,24 @@
 import logging
 import time
+from typing import Any
 
 import requests
 
+from models import AreaSetting, Forecast
+
 logger = logging.getLogger(__name__)
 
-AREA_SETTINGS = [
-    {"area_code": "130000",  "office_code": "130000", "area_name": "首都圏", "prefecture": "東京", "location": "東京"},
-    {"area_code": "2710000", "office_code": "270000", "area_name": "近畿",   "prefecture": "大阪", "location": "大阪"},
-    {"area_code": "400000",  "office_code": "400000", "area_name": "九州",   "prefecture": "福岡", "location": "福岡"},
-    {"area_code": "370000",  "office_code": "370000", "area_name": "四国",   "prefecture": "香川", "location": "高松"},
-    {"area_code": "340000",  "office_code": "340000", "area_name": "中国",   "prefecture": "広島", "location": "広島"},
-    {"area_code": "2310000", "office_code": "230000", "area_name": "東海",   "prefecture": "愛知", "location": "名古屋"},
-    {"area_code": "0410001", "office_code": "040000", "area_name": "東北",   "prefecture": "宮城", "location": "仙台"},
-    {"area_code": "0110000", "office_code": "016000", "area_name": "北海道", "prefecture": "石狩", "location": "札幌"},
-    {"area_code": "0920100", "office_code": "090000", "area_name": "北関東", "prefecture": "栃木", "location": "宇都宮"},
-    {"area_code": "1720100", "office_code": "170000", "area_name": "北陸",   "prefecture": "石川", "location": "金沢"},
+AREA_SETTINGS: list[AreaSetting] = [
+    AreaSetting(area_code="130000",  office_code="130000", area_name="首都圏", prefecture="東京", location="東京"),
+    AreaSetting(area_code="2710000", office_code="270000", area_name="近畿",   prefecture="大阪", location="大阪"),
+    AreaSetting(area_code="400000",  office_code="400000", area_name="九州",   prefecture="福岡", location="福岡"),
+    AreaSetting(area_code="370000",  office_code="370000", area_name="四国",   prefecture="香川", location="高松"),
+    AreaSetting(area_code="340000",  office_code="340000", area_name="中国",   prefecture="広島", location="広島"),
+    AreaSetting(area_code="2310000", office_code="230000", area_name="東海",   prefecture="愛知", location="名古屋"),
+    AreaSetting(area_code="0410001", office_code="040000", area_name="東北",   prefecture="宮城", location="仙台"),
+    AreaSetting(area_code="0110000", office_code="016000", area_name="北海道", prefecture="石狩", location="札幌"),
+    AreaSetting(area_code="0920100", office_code="090000", area_name="北関東", prefecture="栃木", location="宇都宮"),
+    AreaSetting(area_code="1720100", office_code="170000", area_name="北陸",   prefecture="石川", location="金沢"),
 ]
 
 _JMA_FORECAST_URL = "https://www.jma.go.jp/bosai/forecast/data/forecast/{office_code}.json"
@@ -31,59 +34,58 @@ _TEMP_SERIES_INDEX = 1
 _AREA_CODE_PREFIX_LEN = 5
 
 
-def _get_weekly_forecast_json(office_code: str) -> dict:
+def _get_weekly_forecast_json(office_code: str) -> dict[str, Any]:
     url = _JMA_FORECAST_URL.format(office_code=office_code)
     headers = {"User-Agent": _USER_AGENT}
     res = requests.get(url, headers=headers, timeout=_REQUEST_TIMEOUT)
     res.raise_for_status()
-    return res.json()[_WEEKLY_FORECAST_INDEX]
+    return res.json()[_WEEKLY_FORECAST_INDEX]  # type: ignore[no-any-return]
 
 
-def process_all_areas() -> list[dict]:
-    all_forecasts = []
+def process_all_areas() -> list[Forecast]:
+    all_forecasts: list[Forecast] = []
     skipped: list[str] = []
 
     for setting in AREA_SETTINGS:
-        location = setting["location"]
-        logger.info("Fetching: %s (%s)", location, setting["area_code"])
+        logger.info("Fetching: %s (%s)", setting.location, setting.area_code)
         try:
-            weekly_data = _get_weekly_forecast_json(setting["office_code"])
+            weekly_data = _get_weekly_forecast_json(setting.office_code)
 
             ts_weather = weekly_data["timeSeries"][_WEATHER_SERIES_INDEX]
-            dates = ts_weather["timeDefines"]
-            prefix = setting["area_code"][:_AREA_CODE_PREFIX_LEN]
+            dates: list[str] = ts_weather["timeDefines"]
+            prefix = setting.area_code[:_AREA_CODE_PREFIX_LEN]
 
             area_weather = next((a for a in ts_weather["areas"] if prefix in a["area"]["code"]), ts_weather["areas"][0])
-            weather_codes = area_weather.get("weatherCodes", [])
-            pops = area_weather.get("pops", [])
-            reliabilities = area_weather.get("reliabilities", [])
+            weather_codes: list[str] = area_weather.get("weatherCodes", [])
+            pops: list[str] = area_weather.get("pops", [])
+            reliabilities: list[str] = area_weather.get("reliabilities", [])
 
             ts_temp = weekly_data["timeSeries"][_TEMP_SERIES_INDEX]
-            area1 = next((a for a in ts_temp["areas"] if prefix in a["area"]["code"]), ts_temp["areas"][0])
-            temps_min = area1.get("tempsMin", [])
-            temps_max = area1.get("tempsMax", [])
+            area_temp = next((a for a in ts_temp["areas"] if prefix in a["area"]["code"]), ts_temp["areas"][0])
+            temps_min: list[str] = area_temp.get("tempsMin", [])
+            temps_max: list[str] = area_temp.get("tempsMax", [])
 
             for i in range(len(dates)):
-                all_forecasts.append({
-                    "date": dates[i].split("T")[0],
-                    "area_group": setting["area_name"],
-                    "prefecture": setting["prefecture"],
-                    "location": location,
-                    "weather_code": weather_codes[i] if i < len(weather_codes) else "",
-                    "pop": pops[i] if i < len(pops) else "",
-                    "temp_min": temps_min[i] if i < len(temps_min) else "",
-                    "temp_max": temps_max[i] if i < len(temps_max) else "",
-                    "reliability": reliabilities[i] if i < len(reliabilities) else "",
-                })
+                all_forecasts.append(Forecast(
+                    date=dates[i].split("T")[0],
+                    area_group=setting.area_name,
+                    prefecture=setting.prefecture,
+                    location=setting.location,
+                    weather_code=weather_codes[i] if i < len(weather_codes) else "",
+                    pop=pops[i] if i < len(pops) else "",
+                    temp_min=temps_min[i] if i < len(temps_min) else "",
+                    temp_max=temps_max[i] if i < len(temps_max) else "",
+                    reliability=reliabilities[i] if i < len(reliabilities) else "",
+                ))
 
             time.sleep(_REQUEST_INTERVAL_SEC)
 
         except requests.exceptions.RequestException as e:
-            logger.error("Network error fetching %s: %s", location, e)
-            skipped.append(location)
+            logger.error("Network error fetching %s: %s", setting.location, e)
+            skipped.append(setting.location)
         except (KeyError, IndexError, ValueError) as e:
-            logger.error("Parse error fetching %s: %s", location, e)
-            skipped.append(location)
+            logger.error("Parse error fetching %s: %s", setting.location, e)
+            skipped.append(setting.location)
 
     if skipped:
         logger.warning("Skipped %d / %d areas: %s", len(skipped), len(AREA_SETTINGS), skipped)
