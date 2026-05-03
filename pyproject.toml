@@ -5,6 +5,7 @@ description = "気象庁の JSON API から週間予報データを取得して 
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "google-cloud-bigquery>=3.0.0",
     "pydantic>=2.13.3",
     "requests>=2.32.5",
 ]
