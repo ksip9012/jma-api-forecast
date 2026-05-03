@@ -38,9 +38,11 @@ def _get_weekly_forecast_json(office_code: str) -> dict:
 
 def process_all_areas() -> list[dict]:
     all_forecasts = []
+    skipped: list[str] = []
 
     for setting in AREA_SETTINGS:
-        logger.info("Fetching: %s (%s)", setting["location"], setting["area_code"])
+        location = setting["location"]
+        logger.info("Fetching: %s (%s)", location, setting["area_code"])
         try:
             weekly_data = _get_weekly_forecast_json(setting["office_code"])
 
@@ -63,7 +65,7 @@ def process_all_areas() -> list[dict]:
                     "date": dates[i].split("T")[0],
                     "area_group": setting["area_name"],
                     "prefecture": setting["prefecture"],
-                    "location": setting["location"],
+                    "location": location,
                     "weather_code": weather_codes[i] if i < len(weather_codes) else "",
                     "pop": pops[i] if i < len(pops) else "",
                     "temp_min": temps_min[i] if i < len(temps_min) else "",
@@ -73,7 +75,17 @@ def process_all_areas() -> list[dict]:
 
             time.sleep(_REQUEST_INTERVAL_SEC)
 
-        except Exception as e:
-            logger.error("Error fetching %s: %s", setting["location"], e)
+        except requests.exceptions.RequestException as e:
+            logger.error("Network error fetching %s: %s", location, e)
+            skipped.append(location)
+        except (KeyError, IndexError, ValueError) as e:
+            logger.error("Parse error fetching %s: %s", location, e)
+            skipped.append(location)
+
+    if skipped:
+        logger.warning("Skipped %d / %d areas: %s", len(skipped), len(AREA_SETTINGS), skipped)
+
+    if not all_forecasts:
+        raise RuntimeError("All areas failed. No forecast data was collected.")
 
     return all_forecasts
