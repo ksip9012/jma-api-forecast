@@ -24,6 +24,9 @@ _REQUEST_TIMEOUT = 10
 _REQUEST_INTERVAL_SEC = 0.5
 # 気象庁APIのレスポンスは [0]=今日明日予報, [1]=週間予報 の構造
 _WEEKLY_FORECAST_INDEX = 1
+# 週間予報内 timeSeries: [0]=天気・降水確率・信頼度, [1]=気温
+_WEATHER_SERIES_INDEX = 0
+_TEMP_SERIES_INDEX = 1
 # エリアコードの前方5文字でtimeSeriesのareaとマッチングする
 _AREA_CODE_PREFIX_LEN = 5
 
@@ -46,17 +49,17 @@ def process_all_areas() -> list[dict]:
         try:
             weekly_data = _get_weekly_forecast_json(setting["office_code"])
 
-            ts0 = weekly_data["timeSeries"][0]
-            dates = ts0["timeDefines"]
+            ts_weather = weekly_data["timeSeries"][_WEATHER_SERIES_INDEX]
+            dates = ts_weather["timeDefines"]
             prefix = setting["area_code"][:_AREA_CODE_PREFIX_LEN]
 
-            area0 = next((a for a in ts0["areas"] if prefix in a["area"]["code"]), ts0["areas"][0])
-            weather_codes = area0.get("weatherCodes", [])
-            pops = area0.get("pops", [])
-            reliabilities = area0.get("reliabilities", [])
+            area_weather = next((a for a in ts_weather["areas"] if prefix in a["area"]["code"]), ts_weather["areas"][0])
+            weather_codes = area_weather.get("weatherCodes", [])
+            pops = area_weather.get("pops", [])
+            reliabilities = area_weather.get("reliabilities", [])
 
-            ts1 = weekly_data["timeSeries"][1]
-            area1 = next((a for a in ts1["areas"] if prefix in a["area"]["code"]), ts1["areas"][0])
+            ts_temp = weekly_data["timeSeries"][_TEMP_SERIES_INDEX]
+            area1 = next((a for a in ts_temp["areas"] if prefix in a["area"]["code"]), ts_temp["areas"][0])
             temps_min = area1.get("tempsMin", [])
             temps_max = area1.get("tempsMax", [])
 
