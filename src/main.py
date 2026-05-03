@@ -80,15 +80,16 @@ def save_data(forecasts):
         json.dump(forecasts, f, ensure_ascii=False, indent=4)
     
     # CSV 保存
+    csv_path = os.path.join("data", "all_forecasts.csv")
     if forecasts:
-        csv_path = os.path.join("data", "all_forecasts.csv")
         headers = ["date", "area_group", "prefecture", "location", "weather_code", "pop", "temp_min", "temp_max", "reliability"]
         with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=headers)
             writer.writeheader()
             writer.writerows(forecasts)
-    
-    print(f"\nSuccessfully saved {len(forecasts)} rows to {json_path} and {csv_path}")
+        print(f"\nSuccessfully saved {len(forecasts)} rows to {json_path} and {csv_path}")
+    else:
+        print(f"\nNo forecasts to save. JSON saved to {json_path}")
 
 if __name__ == "__main__":
     results = process_all_areas()
