@@ -1,3 +1,5 @@
+"""予報データを CSV および JSON ファイルに保存するモジュール。"""
+
 import csv
 import json
 import logging
@@ -11,6 +13,17 @@ _CSV_FIELDNAMES = ["date", "area_group", "prefecture", "location", "weather_code
 
 
 def save_data(forecasts: list[Forecast]) -> None:
+    """予報レコードリストを data/ ディレクトリに CSV および JSON で保存する。
+
+    forecasts が空の場合は JSON のみ保存し、CSV は生成しない。
+
+    Args:
+        forecasts: 保存対象の予報レコードリスト。
+
+    Side effects:
+        - data/all_forecasts.json を上書き保存する。
+        - forecasts が空でない場合、data/all_forecasts.csv を上書き保存する。
+    """
     os.makedirs("data", exist_ok=True)
 
     json_path = os.path.join("data", "all_forecasts.json")

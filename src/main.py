@@ -1,3 +1,5 @@
+"""気象庁週間予報取得ツールのエントリポイント。"""
+
 import logging
 import sys
 
@@ -9,6 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 def main() -> None:
+    """ロギングを初期化し、予報データを取得して保存する。
+
+    全エリアの取得に失敗した場合は exit code 1 で終了する。
+    """
     setup_logging()
     locations = get_locations()
     try:
