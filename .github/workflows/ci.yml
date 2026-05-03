@@ -10,5 +10,5 @@ jobs:
           python-version: '3.13'
       - run: pip install ruff pytest mypy types-requests pydantic
       - run: ruff check .
-      - run: mypy src/
-      - run: pytest
+      - run: mypy src/ tests/
+      - run: pytest tests/ -v
