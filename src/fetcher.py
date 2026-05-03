@@ -8,19 +8,6 @@ from models import AreaSetting, Forecast
 
 logger = logging.getLogger(__name__)
 
-AREA_SETTINGS: list[AreaSetting] = [
-    AreaSetting(area_code="130000",  office_code="130000", area_name="首都圏", prefecture="東京", location="東京"),
-    AreaSetting(area_code="2710000", office_code="270000", area_name="近畿",   prefecture="大阪", location="大阪"),
-    AreaSetting(area_code="400000",  office_code="400000", area_name="九州",   prefecture="福岡", location="福岡"),
-    AreaSetting(area_code="370000",  office_code="370000", area_name="四国",   prefecture="香川", location="高松"),
-    AreaSetting(area_code="340000",  office_code="340000", area_name="中国",   prefecture="広島", location="広島"),
-    AreaSetting(area_code="2310000", office_code="230000", area_name="東海",   prefecture="愛知", location="名古屋"),
-    AreaSetting(area_code="0410001", office_code="040000", area_name="東北",   prefecture="宮城", location="仙台"),
-    AreaSetting(area_code="0110000", office_code="016000", area_name="北海道", prefecture="石狩", location="札幌"),
-    AreaSetting(area_code="0920100", office_code="090000", area_name="北関東", prefecture="栃木", location="宇都宮"),
-    AreaSetting(area_code="1720100", office_code="170000", area_name="北陸",   prefecture="石川", location="金沢"),
-]
-
 _JMA_FORECAST_URL = "https://www.jma.go.jp/bosai/forecast/data/forecast/{office_code}.json"
 _USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 _REQUEST_TIMEOUT = 10
@@ -42,11 +29,11 @@ def _get_weekly_forecast_json(office_code: str) -> dict[str, Any]:
     return res.json()[_WEEKLY_FORECAST_INDEX]  # type: ignore[no-any-return]
 
 
-def process_all_areas() -> list[Forecast]:
+def process_all_areas(locations: list[AreaSetting]) -> list[Forecast]:
     all_forecasts: list[Forecast] = []
     skipped: list[str] = []
 
-    for setting in AREA_SETTINGS:
+    for setting in locations:
         logger.info("Fetching: %s (%s)", setting.location, setting.area_code)
         try:
             weekly_data = _get_weekly_forecast_json(setting.office_code)
@@ -88,7 +75,7 @@ def process_all_areas() -> list[Forecast]:
             skipped.append(setting.location)
 
     if skipped:
-        logger.warning("Skipped %d / %d areas: %s", len(skipped), len(AREA_SETTINGS), skipped)
+        logger.warning("Skipped %d / %d areas: %s", len(skipped), len(locations), skipped)
 
     if not all_forecasts:
         raise RuntimeError("All areas failed. No forecast data was collected.")

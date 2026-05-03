@@ -1,0 +1,69 @@
+[[locations]]
+area_name  = "首都圏"
+prefecture = "東京"
+location   = "東京"
+area_code  = "130000"
+office_code = "130000"
+
+[[locations]]
+area_name  = "近畿"
+prefecture = "大阪"
+location   = "大阪"
+area_code  = "2710000"
+office_code = "270000"
+
+[[locations]]
+area_name  = "九州"
+prefecture = "福岡"
+location   = "福岡"
+area_code  = "400000"
+office_code = "400000"
+
+[[locations]]
+area_name  = "四国"
+prefecture = "香川"
+location   = "高松"
+area_code  = "370000"
+office_code = "370000"
+
+[[locations]]
+area_name  = "中国"
+prefecture = "広島"
+location   = "広島"
+area_code  = "340000"
+office_code = "340000"
+
+[[locations]]
+area_name  = "東海"
+prefecture = "愛知"
+location   = "名古屋"
+area_code  = "2310000"
+office_code = "230000"
+
+[[locations]]
+area_name  = "東北"
+prefecture = "宮城"
+location   = "仙台"
+area_code  = "0410001"
+office_code = "040000"
+
+[[locations]]
+area_name  = "北海道"
+prefecture = "石狩"
+location   = "札幌"
+area_code  = "0110000"
+office_code = "016000"
+
+[[locations]]
+area_name  = "北関東"
+prefecture = "栃木"
+location   = "宇都宮"
+area_code  = "0920100"
+office_code = "090000"
+
+[[locations]]
+area_name  = "北陸"
+prefecture = "石川"
+location   = "金沢"
+area_code  = "1720100"
+office_code = "170000"
