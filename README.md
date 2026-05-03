@@ -12,12 +12,14 @@
 │   ├── config.py            # ロギング設定・地点設定の読み込み
 │   ├── fetcher.py           # API 取得・パース処理
 │   ├── saver.py             # CSV/JSON 保存処理
+│   ├── bigquery_client.py   # BigQuery 書き込み処理
 │   ├── models.py            # データモデル (AreaSetting, Forecast)
 │   └── locations.toml       # 取得対象エリアの設定ファイル
 ├── tests/
 │   ├── test_config.py
 │   ├── test_fetcher.py
-│   └── test_saver.py
+│   ├── test_saver.py
+│   └── test_bigquery_client.py
 ├── Dockerfile
 ├── .dockerignore
 ├── pyproject.toml
@@ -149,6 +151,46 @@ gcloud logging read \
   --limit 50 \
   --format "value(timestamp, severity, textPayload)"
 ```
+
+## BigQuery へのデータ書き込み
+
+### 事前準備
+
+```bash
+export PROJECT_ID=your-project-id
+export DATASET_ID=weather_data
+export TABLE_ID=jma_weekly_forecast
+
+# データセットの作成（初回のみ）
+bq mk --dataset --location=asia-northeast1 ${PROJECT_ID}:${DATASET_ID}
+
+# テーブルの作成（初回のみ）
+bq mk --table \
+  ${PROJECT_ID}:${DATASET_ID}.${TABLE_ID} \
+  date:STRING,area_group:STRING,prefecture:STRING,location:STRING,weather_code:STRING,pop:STRING,temp_min:STRING,temp_max:STRING,reliability:STRING
+```
+
+### 環境変数
+
+Cloud Run ジョブに以下の環境変数を設定することで BigQuery への書き込みが有効になります。
+
+| 環境変数 | 必須 | デフォルト | 説明 |
+| --- | --- | --- | --- |
+| `GCP_PROJECT_ID` | 必須 | なし | Google Cloud プロジェクト ID。未設定の場合は BigQuery 書き込みをスキップ |
+| `BQ_DATASET_ID` | 任意 | `weather_data` | BigQuery データセット ID |
+| `BQ_TABLE_ID` | 任意 | `jma_weekly_forecast` | BigQuery テーブル ID |
+
+Cloud Run ジョブへの環境変数設定:
+
+```bash
+gcloud run jobs update $JOB_NAME \
+  --region $REGION \
+  --set-env-vars GCP_PROJECT_ID=${PROJECT_ID},BQ_DATASET_ID=${DATASET_ID},BQ_TABLE_ID=${TABLE_ID}
+```
+
+### 書き込み方式
+
+毎実行で `WRITE_TRUNCATE`（全件上書き）を使用します。週間予報は日々更新されるため、常に最新の予報データで上書きします。
 
 ## 取得地点の変更
 
