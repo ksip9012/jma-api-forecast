@@ -59,15 +59,19 @@ def test_process_all_areas_returns_correct_records() -> None:
 
 
 def test_process_all_areas_raises_when_all_fail() -> None:
-    with patch("fetcher._get_weekly_forecast_json", side_effect=requests.exceptions.ConnectionError("error")):
-        with pytest.raises(RuntimeError, match="All areas failed"):
-            process_all_areas([_make_location()])
+    with (
+        patch("fetcher._get_weekly_forecast_json", side_effect=requests.exceptions.ConnectionError("error")),
+        pytest.raises(RuntimeError, match="All areas failed"),
+    ):
+        process_all_areas([_make_location()])
 
 
 def test_process_all_areas_raises_on_parse_error() -> None:
-    with patch("fetcher._get_weekly_forecast_json", return_value={"timeSeries": []}):
-        with pytest.raises(RuntimeError, match="All areas failed"):
-            process_all_areas([_make_location()])
+    with (
+        patch("fetcher._get_weekly_forecast_json", return_value={"timeSeries": []}),
+        pytest.raises(RuntimeError, match="All areas failed"),
+    ):
+        process_all_areas([_make_location()])
 
 
 def test_process_all_areas_partial_skip() -> None:
