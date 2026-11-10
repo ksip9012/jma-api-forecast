@@ -10,7 +10,17 @@ from models import Forecast
 logger = logging.getLogger(__name__)
 
 _DATA_DIR = Path("data")
-_CSV_FIELDNAMES = ["date", "area_group", "prefecture", "location", "weather_code", "pop", "temp_min", "temp_max", "reliability"]
+_CSV_FIELDNAMES = [
+    "date",
+    "area_group",
+    "prefecture",
+    "location",
+    "weather_code",
+    "pop",
+    "temp_min",
+    "temp_max",
+    "reliability",
+]
 
 
 def save_data(forecasts: list[Forecast]) -> None:

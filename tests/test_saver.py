@@ -21,7 +21,9 @@ def _make_forecast(date: str = "2026-05-04", location: str = "東京") -> Foreca
     )
 
 
-def test_save_data_creates_json_and_csv(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_save_data_creates_json_and_csv(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.chdir(tmp_path)
     save_data([_make_forecast("2026-05-04"), _make_forecast("2026-05-05")])
 
@@ -29,17 +31,23 @@ def test_save_data_creates_json_and_csv(tmp_path: Path, monkeypatch: pytest.Monk
     assert (tmp_path / "data" / "all_forecasts.csv").exists()
 
 
-def test_save_data_json_content(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_save_data_json_content(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.chdir(tmp_path)
     save_data([_make_forecast("2026-05-04")])
 
-    data = json.loads((tmp_path / "data" / "all_forecasts.json").read_text(encoding="utf-8"))
+    data = json.loads(
+        (tmp_path / "data" / "all_forecasts.json").read_text(encoding="utf-8")
+    )
     assert len(data) == 1
     assert data[0]["date"] == "2026-05-04"
     assert data[0]["location"] == "東京"
 
 
-def test_save_data_empty_forecasts_no_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_save_data_empty_forecasts_no_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.chdir(tmp_path)
     save_data([])  # Issue #1 のバグ修正確認: NameError が出ないこと
 

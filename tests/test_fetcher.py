@@ -7,7 +7,9 @@ from fetcher import process_all_areas
 from models import AreaSetting
 
 
-def _make_location(area_code: str = "130000", office_code: str = "130000", location: str = "東京") -> AreaSetting:
+def _make_location(
+    area_code: str = "130000", office_code: str = "130000", location: str = "東京"
+) -> AreaSetting:
     return AreaSetting(
         area_code=area_code,
         office_code=office_code,
@@ -22,20 +24,24 @@ def _make_weekly_data(dates: list[str], area_code: str = "13000") -> dict:
         "timeSeries": [
             {
                 "timeDefines": [f"{d}T00:00:00+09:00" for d in dates],
-                "areas": [{
-                    "area": {"code": area_code},
-                    "weatherCodes": ["100"] * len(dates),
-                    "pops":          ["10"]  * len(dates),
-                    "reliabilities": ["A"]   * len(dates),
-                }],
+                "areas": [
+                    {
+                        "area": {"code": area_code},
+                        "weatherCodes": ["100"] * len(dates),
+                        "pops": ["10"] * len(dates),
+                        "reliabilities": ["A"] * len(dates),
+                    }
+                ],
             },
             {
                 "timeDefines": [f"{d}T00:00:00+09:00" for d in dates],
-                "areas": [{
-                    "area": {"code": area_code},
-                    "tempsMin": ["15"] * len(dates),
-                    "tempsMax": ["22"] * len(dates),
-                }],
+                "areas": [
+                    {
+                        "area": {"code": area_code},
+                        "tempsMin": ["15"] * len(dates),
+                        "tempsMax": ["22"] * len(dates),
+                    }
+                ],
             },
         ]
     }
@@ -60,7 +66,10 @@ def test_process_all_areas_returns_correct_records() -> None:
 
 def test_process_all_areas_raises_when_all_fail() -> None:
     with (
-        patch("fetcher._get_weekly_forecast_json", side_effect=requests.exceptions.ConnectionError("error")),
+        patch(
+            "fetcher._get_weekly_forecast_json",
+            side_effect=requests.exceptions.ConnectionError("error"),
+        ),
         pytest.raises(RuntimeError, match="All areas failed"),
     ):
         process_all_areas([_make_location()])

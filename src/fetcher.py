@@ -11,7 +11,9 @@ from models import AreaSetting, Forecast
 
 logger = logging.getLogger(__name__)
 
-_JMA_FORECAST_URL = "https://www.jma.go.jp/bosai/forecast/data/forecast/{office_code}.json"
+_JMA_FORECAST_URL = (
+    "https://www.jma.go.jp/bosai/forecast/data/forecast/{office_code}.json"
+)
 _USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 _REQUEST_TIMEOUT = 10
 _REQUEST_INTERVAL_SEC = 0.5
@@ -70,30 +72,44 @@ def process_all_areas(locations: list[AreaSetting]) -> list[Forecast]:
             dates: list[str] = ts_weather["timeDefines"]
             prefix = setting.area_code[:_AREA_CODE_PREFIX_LEN]
 
-            area_weather = next((a for a in ts_weather["areas"] if prefix in a["area"]["code"]), ts_weather["areas"][0])
+            area_weather = next(
+                (a for a in ts_weather["areas"] if prefix in a["area"]["code"]),
+                ts_weather["areas"][0],
+            )
             weather_codes: list[str] = area_weather.get("weatherCodes", [])
             pops: list[str] = area_weather.get("pops", [])
             reliabilities: list[str] = area_weather.get("reliabilities", [])
 
             ts_temp = weekly_data["timeSeries"][_TEMP_SERIES_INDEX]
-            area_temp = next((a for a in ts_temp["areas"] if prefix in a["area"]["code"]), ts_temp["areas"][0])
+            area_temp = next(
+                (a for a in ts_temp["areas"] if prefix in a["area"]["code"]),
+                ts_temp["areas"][0],
+            )
             temps_min: list[str] = area_temp.get("tempsMin", [])
             temps_max: list[str] = area_temp.get("tempsMax", [])
 
             for date, weather_code, pop, reliability, temp_min, temp_max in zip_longest(
-                dates, weather_codes, pops, reliabilities, temps_min, temps_max, fillvalue=""
+                dates,
+                weather_codes,
+                pops,
+                reliabilities,
+                temps_min,
+                temps_max,
+                fillvalue="",
             ):
-                all_forecasts.append(Forecast(
-                    date=date.split("T")[0],
-                    area_group=setting.area_name,
-                    prefecture=setting.prefecture,
-                    location=setting.location,
-                    weather_code=weather_code,
-                    pop=pop,
-                    temp_min=temp_min,
-                    temp_max=temp_max,
-                    reliability=reliability,
-                ))
+                all_forecasts.append(
+                    Forecast(
+                        date=date.split("T")[0],
+                        area_group=setting.area_name,
+                        prefecture=setting.prefecture,
+                        location=setting.location,
+                        weather_code=weather_code,
+                        pop=pop,
+                        temp_min=temp_min,
+                        temp_max=temp_max,
+                        reliability=reliability,
+                    )
+                )
 
             time.sleep(_REQUEST_INTERVAL_SEC)
 
@@ -105,7 +121,9 @@ def process_all_areas(locations: list[AreaSetting]) -> list[Forecast]:
             skipped.append(setting.location)
 
     if skipped:
-        logger.warning("Skipped %d / %d areas: %s", len(skipped), len(locations), skipped)
+        logger.warning(
+            "Skipped %d / %d areas: %s", len(skipped), len(locations), skipped
+        )
 
     if not all_forecasts:
         raise RuntimeError("All areas failed. No forecast data was collected.")
