@@ -8,25 +8,33 @@ from models import AreaSetting
 
 
 def _make_location(
-    area_code: str = "130000", office_code: str = "130000", location: str = "東京"
+    office_code: str = "130000",
+    location: str = "東京",
+    weather_area_code: str = "130010",
+    temp_area_code: str = "44132",
 ) -> AreaSetting:
     return AreaSetting(
-        area_code=area_code,
         office_code=office_code,
+        weather_area_code=weather_area_code,
+        temp_area_code=temp_area_code,
         area_name="首都圏",
         prefecture="東京",
         location=location,
     )
 
 
-def _make_weekly_data(dates: list[str], area_code: str = "13000") -> dict:
+def _make_weekly_data(
+    dates: list[str],
+    weather_area_code: str = "130010",
+    temp_area_code: str = "44132",
+) -> dict:
     return {
         "timeSeries": [
             {
                 "timeDefines": [f"{d}T00:00:00+09:00" for d in dates],
                 "areas": [
                     {
-                        "area": {"code": area_code},
+                        "area": {"code": weather_area_code},
                         "weatherCodes": ["100"] * len(dates),
                         "pops": ["10"] * len(dates),
                         "reliabilities": ["A"] * len(dates),
@@ -37,7 +45,7 @@ def _make_weekly_data(dates: list[str], area_code: str = "13000") -> dict:
                 "timeDefines": [f"{d}T00:00:00+09:00" for d in dates],
                 "areas": [
                     {
-                        "area": {"code": area_code},
+                        "area": {"code": temp_area_code},
                         "tempsMin": ["15"] * len(dates),
                         "tempsMax": ["22"] * len(dates),
                     }
@@ -85,8 +93,8 @@ def test_process_all_areas_raises_on_parse_error() -> None:
 
 def test_process_all_areas_partial_skip() -> None:
     locations = [
-        _make_location(area_code="130000", office_code="130000", location="東京"),
-        _make_location(area_code="270000", office_code="270000", location="大阪"),
+        _make_location(office_code="130000", location="東京"),
+        _make_location(office_code="270000", location="大阪"),
     ]
     dates = ["2026-05-04", "2026-05-05"]
     mock_data = _make_weekly_data(dates)
@@ -101,3 +109,46 @@ def test_process_all_areas_partial_skip() -> None:
 
     assert len(result) == 2
     assert all(r["location"] == "東京" for r in result)
+
+
+def test_process_all_areas_uses_matching_area_not_first() -> None:
+    mock_data = _make_weekly_data(["2026-05-04"])
+    weather_areas = mock_data["timeSeries"][0]["areas"]
+    temp_areas = mock_data["timeSeries"][1]["areas"]
+    weather_areas.insert(
+        0,
+        {
+            "area": {"code": "130020"},
+            "weatherCodes": ["300"],
+            "pops": ["90"],
+            "reliabilities": ["C"],
+        },
+    )
+    temp_areas.insert(
+        0, {"area": {"code": "44172"}, "tempsMin": ["1"], "tempsMax": ["2"]}
+    )
+
+    with patch("fetcher._get_weekly_forecast_json", return_value=mock_data):
+        result = process_all_areas([_make_location()])
+
+    assert result[0]["weather_code"] == "100"
+    assert result[0]["temp_min"] == "15"
+
+
+@pytest.mark.parametrize(
+    "codes",
+    [
+        {"weather_area_code": "999999"},
+        {"temp_area_code": "99999"},
+    ],
+)
+def test_process_all_areas_skips_when_area_code_not_found(
+    codes: dict[str, str],
+) -> None:
+    mock_data = _make_weekly_data(["2026-05-04"])
+
+    with (
+        patch("fetcher._get_weekly_forecast_json", return_value=mock_data),
+        pytest.raises(RuntimeError, match="All areas failed"),
+    ):
+        process_all_areas([_make_location(**codes)])

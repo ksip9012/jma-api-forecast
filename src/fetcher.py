@@ -22,8 +22,25 @@ _WEEKLY_FORECAST_INDEX = 1
 # 週間予報内 timeSeries: [0]=天気・降水確率・信頼度, [1]=気温
 _WEATHER_SERIES_INDEX = 0
 _TEMP_SERIES_INDEX = 1
-# エリアコードの前方5文字でtimeSeriesのareaとマッチングする
-_AREA_CODE_PREFIX_LEN = 5
+
+
+def _find_area(areas: list[dict[str, Any]], code: str) -> dict[str, Any]:
+    """timeSeries の areas から、コードが完全に一致する地域を返す。
+
+    Args:
+        areas: timeSeries の areas。
+        code: 探す地域のコード。
+
+    Returns:
+        コードが一致した地域の辞書。
+
+    Raises:
+        ValueError: コードが一致する地域がない場合。
+    """
+    for area in areas:
+        if area["area"]["code"] == code:
+            return area
+    raise ValueError(f"area code not found: {code}")
 
 
 def _get_weekly_forecast_json(office_code: str) -> dict[str, Any]:
@@ -64,27 +81,20 @@ def process_all_areas(locations: list[AreaSetting]) -> list[Forecast]:
     skipped: list[str] = []
 
     for setting in locations:
-        logger.info("Fetching: %s (%s)", setting.location, setting.area_code)
+        logger.info("Fetching: %s (%s)", setting.location, setting.office_code)
         try:
             weekly_data = _get_weekly_forecast_json(setting.office_code)
 
             ts_weather = weekly_data["timeSeries"][_WEATHER_SERIES_INDEX]
             dates: list[str] = ts_weather["timeDefines"]
-            prefix = setting.area_code[:_AREA_CODE_PREFIX_LEN]
 
-            area_weather = next(
-                (a for a in ts_weather["areas"] if prefix in a["area"]["code"]),
-                ts_weather["areas"][0],
-            )
+            area_weather = _find_area(ts_weather["areas"], setting.weather_area_code)
             weather_codes: list[str] = area_weather.get("weatherCodes", [])
             pops: list[str] = area_weather.get("pops", [])
             reliabilities: list[str] = area_weather.get("reliabilities", [])
 
             ts_temp = weekly_data["timeSeries"][_TEMP_SERIES_INDEX]
-            area_temp = next(
-                (a for a in ts_temp["areas"] if prefix in a["area"]["code"]),
-                ts_temp["areas"][0],
-            )
+            area_temp = _find_area(ts_temp["areas"], setting.temp_area_code)
             temps_min: list[str] = area_temp.get("tempsMin", [])
             temps_max: list[str] = area_temp.get("tempsMax", [])
 

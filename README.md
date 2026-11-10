@@ -201,8 +201,9 @@ gcloud run jobs update $JOB_NAME \
 area_name   = "首都圏"
 prefecture  = "東京"
 location    = "東京"
-area_code   = "130000"
 office_code = "130000"
+weather_area_code = "130010"
+temp_area_code    = "44132"
 ```
 
 | フィールド | 内容 |
@@ -210,8 +211,11 @@ office_code = "130000"
 | `area_name` | 広域エリア名（出力データの `area_group` に使用） |
 | `prefecture` | 都道府県名 |
 | `location` | 地点名 |
-| `area_code` | 気象庁の地域コード |
 | `office_code` | 気象庁の府県予報区コード（API リクエストに使用） |
+| `weather_area_code` | 週間予報の天気の地域コード（API の `timeSeries[0].areas[].area.code` と完全一致） |
+| `temp_area_code` | 週間予報の気温の地点コード（API の `timeSeries[1].areas[].area.code` と完全一致） |
+
+コードが API の応答に見つからない地点は失敗として扱います。失敗した地点が 1つでもある日は BigQuery に書き込まず、終了コード 1 で終わります（前回の全地点分のデータが残ります）。
 
 ## データ項目 (CSV/JSON)
 

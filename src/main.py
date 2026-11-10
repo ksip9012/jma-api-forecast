@@ -18,6 +18,8 @@ def main() -> None:
     """ロギングを初期化し、予報データを取得・保存・BigQuery 書き込みする。
 
     全エリアの取得に失敗した場合は exit code 1 で終了する。
+    一部のエリアが失敗した場合は、BigQuery の前回の全エリア分を残すため
+    書き込まず、exit code 1 で終了する。
     GCP_PROJECT_ID が未設定の場合は BigQuery 書き込みをスキップする。
     """
     setup_logging()
@@ -28,6 +30,12 @@ def main() -> None:
         logger.error("%s", e)
         sys.exit(1)
     save_data(forecasts)
+
+    fetched = {forecast["location"] for forecast in forecasts}
+    missing = [loc.location for loc in locations if loc.location not in fetched]
+    if missing:
+        logger.error("Skipping BigQuery write. Failed areas: %s", missing)
+        sys.exit(1)
 
     project_id = os.getenv("GCP_PROJECT_ID")
     if not project_id:

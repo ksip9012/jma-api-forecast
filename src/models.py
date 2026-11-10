@@ -6,8 +6,9 @@ from pydantic import BaseModel
 class AreaSetting(BaseModel):
     """気象庁の予報エリア設定を定義するモデル。"""
 
-    area_code: str
     office_code: str
+    weather_area_code: str
+    temp_area_code: str
     area_name: str
     prefecture: str
     location: str
