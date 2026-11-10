@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 _JMA_FORECAST_URL = (
     "https://www.jma.go.jp/bosai/forecast/data/forecast/{office_code}.json"
 )
-_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+_USER_AGENT = "jma-api-forecast/0.1 (+https://github.com/ksip9012/jma-api-forecast)"
 _REQUEST_TIMEOUT = 10
 _REQUEST_INTERVAL_SEC = 0.5
 # 気象庁APIのレスポンスは [0]=今日明日予報, [1]=週間予報 の構造

@@ -3,8 +3,18 @@ from unittest.mock import patch
 import pytest
 import requests
 
-from fetcher import process_all_areas
+from fetcher import _get_weekly_forecast_json, process_all_areas
 from models import AreaSetting
+
+
+def test_get_weekly_forecast_json_identifies_this_tool() -> None:
+    with patch("fetcher.requests.get") as mock_get:
+        mock_get.return_value.json.return_value = [{}, {}]
+        _get_weekly_forecast_json("130000")
+
+    user_agent = mock_get.call_args.kwargs["headers"]["User-Agent"]
+    assert user_agent.startswith("jma-api-forecast/")
+    assert "Mozilla" not in user_agent
 
 
 def _make_location(
