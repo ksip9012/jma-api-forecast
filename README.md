@@ -235,6 +235,13 @@ BigQuery への格納を想定し、列名は英語（スネークケース）�
 
 > (※1) `weather_code` は気象庁定義のコードです。詳細な天気名が必要な場合は BigQuery 側でマスタテーブルと結合して利用してください。
 
+## データの出典
+
+- 出典: [気象庁ホームページ](https://www.jma.go.jp/bosai/forecast/)
+- 利用規約: [気象庁ホームページについて](https://www.jma.go.jp/jma/kishou/info/coment.html)（公共データ利用規約 第 1.0 版）
+
+`data/all_forecasts.csv` と `data/all_forecasts.json` は出力のサンプルです。気象庁の週間予報を、地点ごとに取り出して列を整理する加工をしています。`LICENSE`（MIT）が対象とするのはコードで、これらのデータには上記の利用規約が適用されます。
+
 ## 開発
 
 ### テストの実行
