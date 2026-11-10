@@ -13,8 +13,9 @@ def test_get_locations_has_required_fields() -> None:
     locations = get_locations()
 
     for loc in locations:
-        assert loc.area_code
         assert loc.office_code
+        assert loc.weather_area_code
+        assert loc.temp_area_code
         assert loc.area_name
         assert loc.prefecture
         assert loc.location
